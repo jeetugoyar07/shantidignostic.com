@@ -1,73 +1,46 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-getAuth,
-RecaptchaVerifier,
-signInWithPhoneNumber
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+// 🔥 Firebase Config (apna dalna agar different hai)
 const firebaseConfig = {
-apiKey: "AIzaSyDZ3h5dY8QaDxmgDa6ICNUtz1FhwePxerI",
-authDomain: "shanti-diagnostic-centre.firebaseapp.com",
-projectId: "shanti-diagnostic-centre",
-storageBucket: "shanti-diagnostic-centre.firebasestorage.app",
-messagingSenderId: "589202645676",
-appId: "1:589202645676:web:2c490532181a53b21b7509"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Init Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-window.recaptchaVerifier =
-new RecaptchaVerifier(auth,"recaptcha-container",{});
+async function searchReport() {
+  const mobile = document.getElementById("mobile").value.trim();
+  const resultDiv = document.getElementById("result");
 
-window.sendOTP = async () => {
+  resultDiv.innerHTML = "Searching... ⏳";
 
-const phone =
-document.getElementById("phone").value;
+  if (!mobile) {
+    resultDiv.innerHTML = "Please enter mobile number ❌";
+    return;
+  }
 
-try {
+  try {
+    const docRef = await db.collection("patient").doc(mobile).get();
 
-const confirmationResult =
-await signInWithPhoneNumber(
-auth,
-phone,
-window.recaptchaVerifier
-);
+    if (!docRef.exists) {
+      resultDiv.innerHTML = "No report found ❌";
+      return;
+    }
 
-window.confirmationResult =
-confirmationResult;
+    const data = docRef.data();
 
-alert("OTP Sent");
+    resultDiv.innerHTML = `
+      <p><b>Name:</b> ${data.name || "N/A"}</p>
+      <p><b>Mobile:</b> ${mobile}</p>
+      <a href="${data.pdfLink}" target="_blank">📄 Download Report</a>
+    `;
 
+  } catch (error) {
+    console.error(error);
+    resultDiv.innerHTML = "Error fetching report ❌";
+  }
 }
-catch(error){
-
-alert(error.message);
-
-}
-
-};
-
-window.verifyOTP = async () => {
-
-const otp =
-document.getElementById("otp").value;
-
-try {
-
-await window.confirmationResult.confirm(otp);
-
-document.getElementById("result")
-.innerHTML =
-"Login Successful";
-
-}
-catch(error){
-
-alert("Wrong OTP");
-
-}
-
-};
